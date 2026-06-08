@@ -432,7 +432,7 @@ body::after {
   top: 50%; left: 50%;
   width: 240%; height: 700%;
   transform: translate(-50%, -50%);
-  background: radial-gradient(ellipse at center, rgba(0,0,0,0.52) 15%, transparent 65%);
+  /* background: radial-gradient(ellipse at center, rgba(0,0,0,0.52) 15%, transparent 65%); */
   pointer-events: none;
   z-index: -1;
 }
@@ -838,7 +838,7 @@ body::after {
   flex-direction: column;
   text-align: center;
   gap: 1rem;
-  padding-bottom: 35vh;
+  padding-bottom: 14vh;
   will-change: transform, opacity;
 }
 .epilogue-final span {
@@ -874,6 +874,7 @@ body::after {
   color: var(--text-dim);
   text-align: center;
   text-transform: uppercase;
+  padding-bottom: 0.8rem;
 }
 
 /* ═══════════════════════════════════════════
@@ -887,9 +888,12 @@ body::after {
   justify-content: center;
   border: 1px solid rgba(234,226,210,0.25);
   background: rgba(0,0,0,0.28);
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(6px);
   box-shadow: 0 0 24px rgba(234,226,210,0.08), inset 0 0 30px rgba(0,0,0,0.12);
   will-change: transform;
+  pointer-events: auto;
+  cursor: none;
+  transition: border-color 0.35s ease, box-shadow 0.35s ease;
 }
 .balance-marker-lines {
   display: flex;
@@ -903,12 +907,34 @@ body::after {
   width: 50px;
   border-radius: 1px;
   opacity: 0.8;
+  transition: box-shadow 0.35s ease, opacity 0.35s ease, width 0.35s ease;
 }
 .bm-erde   { background: #6fcf5a; box-shadow: 0 0 7px #6fcf5a; }
 .bm-feuer  { background: #ff6a1e; box-shadow: 0 0 7px #ff6a1e; }
 .bm-wasser { background: #42b4f0; box-shadow: 0 0 7px #42b4f0; }
 .bm-luft   { background: #daedf2; box-shadow: 0 0 7px #daedf2; }
-.balance-marker .sq-corner { border-color: rgba(234,226,210,0.45); box-shadow: none; }
+.balance-marker .sq-corner {
+  border-color: rgba(234,226,210,0.45);
+  box-shadow: none;
+  transition: box-shadow 0.35s ease, border-color 0.35s ease;
+}
+
+/* Hover — alle 4 Elementfarben leuchten auf, wie bei start-canvas */
+.balance-marker:hover {
+  border-color: rgba(234,226,210,0.9);
+  box-shadow: 0 0 32px rgba(111,207,90,0.25),
+              0 0 32px rgba(255,106,30,0.25),
+              0 0 32px rgba(66,180,240,0.25),
+              0 0 32px rgba(218,237,242,0.25);
+}
+.balance-marker:hover .bm-erde   { box-shadow: 0 0 14px #6fcf5a; opacity: 1; width: 56px; }
+.balance-marker:hover .bm-feuer  { box-shadow: 0 0 14px #ff6a1e; opacity: 1; width: 56px; }
+.balance-marker:hover .bm-wasser { box-shadow: 0 0 14px #42b4f0; opacity: 1; width: 56px; }
+.balance-marker:hover .bm-luft   { box-shadow: 0 0 14px #daedf2; opacity: 1; width: 56px; }
+.balance-marker:hover .sq-corner {
+  border-color: rgba(234,226,210,0.9);
+  box-shadow: 0 0 6px rgba(234,226,210,0.9);
+}
 
 /* ═══════════════════════════════════════════
    EPILOGUE SEQUENTIAL REVEAL
@@ -917,8 +943,8 @@ body::after {
   position: relative;
   width: 100%;
   background: var(--page-bg);
-  min-height: 280vh;
-  padding: 80vh 2rem 0vh;
+  min-height: 225vh;
+  padding: 80vh 2rem 0;
 }
 #epilogue-section .finale-epilogue {
   gap: 28vh;       /* extra breathing room between blocks */
@@ -943,12 +969,12 @@ body::after {
 #global-finale-exit {
   position: relative;
   width: 100%;
-  /* min-height: 200vh; */
+  /* min-height: 180vh; */
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-end;
-  padding-bottom: 14vh;
+  padding-bottom: 12vh;
 }
 #finale-exit-canvas {
   display: block;
@@ -973,13 +999,126 @@ body::after {
 .finale-exit-cue.visible { opacity: 1; }
 
 /* ═══════════════════════════════════════════
-   RESPONSIVE
+   RESPONSIVE — TABLET LANDSCAPE (≤ 1024px)
+   Cards narrower, minor spacing tweaks
 ═══════════════════════════════════════════ */
-@media (max-width: 800px) {
+@media (max-width: 1024px) {
+  .card-img-wrap { flex: 0 0 340px; }
+  .card-row      { gap: 3rem; margin-bottom: 5rem; }
+  .network-text  { max-width: 480px; }
+  .finale-inner  { max-width: 520px; }
+}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE — TABLET PORTRAIT + MOBILE (≤ 768px)
+   Full layout shift: stacked cards, reduced spacings
+═══════════════════════════════════════════ */
+@media (max-width: 768px) {
+
+  /* ── Cursor: pointless on touch ── */
+  body         { cursor: auto; }
+  body::before { display: none; }           /* hide custom cursor dot */
+  .floating-symbol,
+  .element-entry { cursor: auto; }
+
+  /* ── Loader ── */
+  .loader-bar-wrap { width: 130px; }
+
+  /* ── Start section ── */
+  .start-title        { margin-bottom: 3rem; }
+  .elements-row       { gap: 2rem; flex-wrap: wrap; }
+  .element-symbol-wrap{ width: 80px; height: 80px; }
+  .floating-symbol    { width: 90px; height: 90px; }
+
+  /* ── Hero ── */
+  .el-hero::after { height: 40vh; }
+
+  /* ── Network section ── */
+  .el-network     { height: 100vh; }
+  .network-text   { max-width: 88%; padding: 1.5rem; }
+  .net-heading    { font-size: clamp(1.4rem, 5.5vw, 2.4rem); }
+  .net-body       { font-size: 0.9rem; }
+
+  /* ── Cards ── */
+  .cards-intro            { padding: 5vh 1.5rem 4vh; }
+  .cards-intro h2         { font-size: clamp(1.5rem, 6vw, 2.2rem); }
   .card-row,
-  .card-row:nth-child(even) { flex-direction:column; gap:1.8rem; }
-  .card-img-wrap { flex:none; width:100%; }
-  .card-text p { max-width:100%; }
-  .elements-row { gap:2rem; }
-  .element-symbol-wrap { width:80px; height:80px; }
+  .card-row:nth-child(even){ flex-direction: column; gap: 1.5rem; }
+  .card-img-wrap          { flex: none; width: 100%; }
+  .card-row               { margin-bottom: 4rem; }
+  .card-text p            { max-width: 100%; }
+  .chapter-divider        { padding: 3rem 1.5rem 2.5rem; }
+  .chapter-divider h2     { font-size: clamp(1.5rem, 6vw, 2.2rem); }
+
+  /* ── Element finale ── */
+  .el-finale      { padding: 5rem 1.5rem; min-height: 60vh; }
+  .finale-inner   { max-width: 88%; }
+  .finale-inner::before { width: 200%; height: 200%; }
+  .finale-inner h2      { font-size: clamp(1.6rem, 5.5vw, 2.8rem); }
+  .finale-question      { font-size: clamp(0.88rem, 3.5vw, 1.1rem); }
+
+  /* ── Global finale (network hub between elements) ── */
+  #global-finale        { min-height: 130vh; padding-bottom: 6vh; }
+  .finale-loop-inner    { padding-bottom: 18vh; }
+
+  /* ── Epilogue section ── */
+  #epilogue-section     { padding: 50vh 1.5rem 0; min-height: 180vh; }
+  #epilogue-section .finale-epilogue { gap: 22vh; }
+  .finale-epilogue      { gap: 14vh; }
+  .epilogue-final       { padding-bottom: 10vh; }
+
+  /* ── Balance marker ── */
+  .balance-marker       { width: 90px; height: 90px; }
+  .balance-marker-lines span { width: 36px; }
+
+  /* ── Exit finale ── */
+  #global-finale-exit   { min-height: 150vh; padding-bottom: 10vh; }
+}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE — PHONE (≤ 480px)
+   Further reduction of sizes and spacings
+═══════════════════════════════════════════ */
+@media (max-width: 480px) {
+
+  /* ── Start section ── */
+  #start-inner          { padding: 3rem 1.2rem; }
+  .start-overline       { font-size: 0.52rem; letter-spacing: 0.28em; }
+  .start-title          { font-size: clamp(1.4rem, 8vw, 2.2rem); margin-bottom: 2.5rem; }
+  .elements-row         { gap: 1.4rem; }
+  .element-symbol-wrap  { width: 68px; height: 68px; }
+  .element-label        { font-size: 0.54rem; letter-spacing: 0.32em; }
+  .floating-symbol      { width: 76px; height: 76px; }
+
+  /* ── Hero text ── */
+  .hero-title           { font-size: clamp(3.5rem, 14vw, 6rem); }
+  .hero-sub             { font-size: 0.6rem; letter-spacing: 0.22em; margin-top: 1rem; }
+  .hero-overline        { font-size: 0.54rem; letter-spacing: 0.3em; }
+
+  /* ── Network ── */
+  .net-heading          { font-size: clamp(1.3rem, 7vw, 2rem); }
+  .net-body             { font-size: 0.85rem; line-height: 1.65; }
+  .network-text         { padding: 1.2rem; }
+
+  /* ── Cards ── */
+  .cards-intro          { padding: 4vh 1.2rem 3vh; }
+  .card-row             { margin-bottom: 3rem; gap: 1.2rem; }
+  .card-num             { font-size: 0.65rem; }
+
+  /* ── Finale ── */
+  .el-finale            { padding: 4rem 1.2rem; }
+  .finale-inner h2      { font-size: clamp(1.4rem, 6.5vw, 2.4rem); }
+  .finale-inner > p     { font-size: 0.88rem; line-height: 1.7; }
+  .finale-question      { font-size: clamp(0.82rem, 4vw, 1rem); padding: 0 0.5rem; }
+
+  /* ── Epilogue ── */
+  #epilogue-section     { padding: 40vh 1.2rem 0; min-height: 160vh; }
+  #epilogue-section .finale-epilogue { gap: 18vh; }
+  .epilogue-block p     { font-size: 0.88rem; }
+  .epilogue-final span  { font-size: 0.88rem; }
+  .epilogue-final strong{ font-size: clamp(1.2rem, 6vw, 1.8rem); }
+
+  /* ── Loader ── */
+  .loader-bar-wrap      { width: 110px; }
+  .loader-label         { font-size: 0.58rem; letter-spacing: 0.28em; }
 }
