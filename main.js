@@ -590,6 +590,8 @@ function buildCardsHTML(el) {
    5. CURSOR
 ═══════════════════════════════════════════════════════ */
 function initCursor() {
+  // Touch devices have no mouse cursor — skip entirely
+  if (window.matchMedia('(pointer: coarse)').matches) return;
   document.addEventListener('mousemove', e => {
     document.documentElement.style.setProperty('--cx', e.clientX+'px');
     document.documentElement.style.setProperty('--cy', e.clientY+'px');
@@ -600,16 +602,63 @@ function initCursor() {
    6. LOADER
 ═══════════════════════════════════════════════════════ */
 function initLoader() {
-  const lbar=document.getElementById('lbar');
-  const lpct=document.getElementById('lpct');
-  const loader=document.getElementById('loader');
-  let v=0;
-  const iv=setInterval(()=>{
-    v+=Math.random()*14+2;
-    if(v>=100){v=100;clearInterval(iv);setTimeout(()=>loader.classList.add('done'),450);}
-    lbar.style.width=v+'%';
-    lpct.textContent=Math.floor(v)+'%';
-  },70);
+  const lbar   = document.getElementById('lbar');
+  const lpct   = document.getElementById('lpct');
+  const loader = document.getElementById('loader');
+
+  const MIN_MS = 1200; // minimum display time so it never just flashes
+
+  // ── Collect resources to track ──────────────────────────
+  const promises = [];
+
+  // 1. Custom fonts (Grotesk + CommitMono)
+  promises.push(document.fonts.ready);
+
+  // 2. Eager images: start symbols + hero symbols (no loading="lazy")
+  document.querySelectorAll('img:not([loading="lazy"])').forEach(img => {
+    if (!img.complete) {
+      promises.push(new Promise(resolve => {
+        img.addEventListener('load',  () => resolve(), { once: true });
+        img.addEventListener('error', () => resolve(), { once: true });
+      }));
+    }
+  });
+
+  // 3. Guaranteed minimum display time
+  promises.push(new Promise(resolve => setTimeout(resolve, MIN_MS)));
+
+  // ── Smooth progress animation ────────────────────────────
+  const total = promises.length;
+  let done = 0;
+  let displayPct = 0;
+  let targetPct  = 0;
+
+  // Advance target as each resource resolves
+  promises.forEach(p => {
+    Promise.resolve(p).then(() => {
+      done++;
+      targetPct = (done / total) * 100;
+    });
+  });
+
+  // Lerp display value toward target every frame
+  let lastFrame = null;
+  function tick(now) {
+    if (!lastFrame) lastFrame = now;
+    const dt = Math.min((now - lastFrame) / 1000, 0.1);
+    lastFrame = now;
+    displayPct += (targetPct - displayPct) * Math.min(1, dt * 6);
+    lbar.style.width  = displayPct + '%';
+    lpct.textContent  = Math.floor(displayPct) + '%';
+    if (displayPct < 99.5) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+
+  // Hide once everything is truly loaded
+  Promise.all(promises).then(() => {
+    targetPct = 100;
+    setTimeout(() => loader.classList.add('done'), 450);
+  });
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -1399,18 +1448,21 @@ function initFinaleExitCanvas() {
 
   function buildNodes(){
     const W=canvas.width,H=canvas.height;
-    const hubX=W/2,hubY=H*0.55;
+    // Hub near top — network fans downward across the whole canvas
+    const hubX=W/2,hubY=H*0.14;
     nodes=[{cx:hubX,cy:hubY,isHub:true,r:5,delay:0,nc:allColors[0],
       spring:{x:new Spring({...PRESETS.bouncy,initial:hubX}),y:new Spring({...PRESETS.bouncy,initial:hubY})}}];
     for(let i=0;i<NODE_COUNT-1;i++){
-      const angle=(Math.random()-0.5)*Math.PI*2;
-      const dist=60+Math.random()*Math.min(W,H)*0.72;
+      // Full downward fan — nodes fill entire canvas height
+      const angle=Math.PI*0.08+Math.random()*Math.PI*1.84;
+      const dist=80+Math.random()*Math.max(W,H)*0.85;
       let tx=hubX+Math.cos(angle)*dist;
       let ty=hubY+Math.sin(angle)*dist;
-      tx=clamp(tx,30,W-30);ty=clamp(ty,30,H-30);
+      tx=clamp(tx,20,W-20);
+      ty=clamp(ty,20,H*0.90);
       const nc=allColors[i%allColors.length];
       nodes.push({cx:tx,cy:ty,isHub:false,r:1.5+Math.random()*2.5,
-        delay:0.02+(i/(NODE_COUNT-1))*0.85,nc,
+        delay:0.02+(i/(NODE_COUNT-1))*0.72,nc,
         spring:{x:new Spring({...PRESETS.bouncy,initial:hubX}),y:new Spring({...PRESETS.bouncy,initial:hubY})}});
     }
   }
@@ -1422,7 +1474,7 @@ function initFinaleExitCanvas() {
     if(!section) return;
     const rect=section.getBoundingClientRect(),vh=window.innerHeight;
     scrollProgress=clamp((vh-rect.top)/(vh+rect.height),0,1);
-    if(cue) cue.classList.toggle('visible', scrollProgress>0.55);
+    if(cue) cue.classList.toggle('visible', scrollProgress>0.42);
   },{passive:true});
 
   const flickerOff=Array.from({length:NODE_COUNT},()=>Math.random()*Math.PI*2);
@@ -1482,13 +1534,13 @@ function initFinaleExitCanvas() {
       ctx.fillStyle=ca(nc,hubA);ctx.shadowColor=nc.hex;ctx.shadowBlur=28;ctx.fill();ctx.restore();
     }
 
-    // Edge fades
-    const fadeTop=ctx.createLinearGradient(0,0,0,H*0.1);
+    // Edge fades — top thin (hub sits at 12%), bottom protects cue text
+    const fadeTop=ctx.createLinearGradient(0,0,0,H*0.05);
     fadeTop.addColorStop(0,'rgba(9,8,6,1)');fadeTop.addColorStop(1,'rgba(9,8,6,0)');
-    ctx.fillStyle=fadeTop;ctx.fillRect(0,0,W,H*0.1);
-    const fadeBot=ctx.createLinearGradient(0,H*0.88,0,H);
-    fadeBot.addColorStop(0,'rgba(9,8,6,0)');fadeBot.addColorStop(1,'rgba(9,8,6,0.9)');
-    ctx.fillStyle=fadeBot;ctx.fillRect(0,H*0.88,W,H*0.12);
+    ctx.fillStyle=fadeTop;ctx.fillRect(0,0,W,H*0.05);
+    const fadeBot=ctx.createLinearGradient(0,H*0.86,0,H);
+    fadeBot.addColorStop(0,'rgba(9,8,6,0)');fadeBot.addColorStop(1,'rgba(9,8,6,1)');
+    ctx.fillStyle=fadeBot;ctx.fillRect(0,H*0.86,W,H*0.14);
 
     requestAnimationFrame(frame);
   }
